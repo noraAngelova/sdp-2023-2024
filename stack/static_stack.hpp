@@ -2,6 +2,7 @@
 #define _STATIC_STACK_HPP
 
 #include <iostream>
+// This constant can be injected in the template as well (template <typename T, unsigned MAX_SIZE = 1024>)
 const unsigned MAX_SIZE = 1024;
 
 template <typename T>
