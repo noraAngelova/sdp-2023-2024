@@ -80,6 +80,10 @@ public:
 	T& operator*() {
 		return get();
 	}
+	
+	T const& operator*() const{
+		return getConst();
+	}
 
 	// Сравнение на итератори
 	// it1 == it2
@@ -106,18 +110,29 @@ public:
 // Дефиниране на клас Свързан списък
 template <typename T>
 class LinkedList {
+public:
 	using LLE = LinkedListElement<T>;
+	// Ще използваме I като тип за LinkedListIterator<T>
+	using I = LinkedListIterator<T>;
+	using Type = T;
 
+private:
 	// Представяне на свързан списък с два указателя
 	LLE *front, *back;
 
 	// Помощна член-функция за изтриване на динамично заделената памет
 	void erase();
-public:
-	// Ще използваме I като тип за LinkedListIterator<T>
-	using I = LinkedListIterator<T>;
-	using Type = T;
 
+	// Допълнителен метод за намиране на предходен елемент
+	I findPrev(I const& it) {
+		I result = begin();
+		while (result && result.next() != it)
+			++result;
+
+		return result;
+	}
+
+public:
 	// Подразбиращ се конструктор, който създава празен списък
 	LinkedList() : front(nullptr), back(nullptr) {}
 	
@@ -131,8 +146,21 @@ public:
 	}
 
 	// Move конструктор и оператор за присвояване
-	LinkedList(LinkedList<T> && ll);
-	LinkedList<T>& operator=(LinkedList<T> && ll);
+	LinkedList(LinkedList<T>&& ll) {
+		front = ll.front;
+		back = ll.back;
+		ll.front = ll.back= nullptr;
+	}
+
+	LinkedList<T>& operator=(LinkedList<T>&& ll) {
+		if (this != &ll) {
+			erase();
+			front = ll.front;
+			back = ll.back;
+			ll.front = ll.back = nullptr;
+		}
+		return *this;
+	}
 
 
 	// Методи за взимане на позиции в свързания списък
@@ -146,6 +174,10 @@ public:
 		// което позволява използване на цикли до края на списъка - до невалидна позиция
 		// Реализацията е сходна с stl-ската
 		return I();
+	}
+
+	I last() const {
+		return I(back);
 	}
 
 	// Метод, който проверява дали списъкът е празен
@@ -172,7 +204,7 @@ public:
 		return insertBefore(begin(), x);
 	}
 	bool insertLast(T const& x) {
-		return insertAfter(end(), x);
+		return insertAfter(last(), x);
 	}
 
 	// Фунции за изтриване на елемент без допълнителен параметър
@@ -215,9 +247,6 @@ public:
 		return *this; 
 	}
 
-private:
-	// Допълнителен метод за намиране на предходен елемент
-	I findPrev(I const& it);
 };
 
 template <typename T>
@@ -250,25 +279,6 @@ void LinkedList<T>::erase() {
 		deleteFirst();
 }
 
-// O(n) по време и O(1) по памет
-template <typename T>
-LinkedListIterator<T> LinkedList<T>::findPrev(LinkedListIterator<T> const& it) {
-	// Първи се определя кой е текущият елемент
-	LLE* target;
-	if (!it)
-		// Ще ще търси елементът преди последния
-		target = back;
-	else
-		target = it.ptr;
-
-	I result = begin();
-	while (result && result.ptr->next != target)
-		++result;
-
-	// result.ptr->next == target
-	return result;
-}
-
 // Конструктор за копиране
 template <typename T>
 LinkedList<T>::LinkedList(LinkedList const& l) : front(nullptr), back(nullptr) {
@@ -292,77 +302,84 @@ LinkedList<T>& LinkedList<T>::operator=(LinkedList const& l) {
 template <typename T>
 bool LinkedList<T>::insertAfter(I const& it, T const& x) {
 	if (empty()) {
-		return insertFirst(x);
+		front = back = new LLE{ x, nullptr };
+		return true;
 	}
 
-	LLE* newElem = new LLE{ x, nullptr };
+	it.ptr->next = new LLE{ x, it.ptr->next };
 
-	// it.ptr == nullptr <=> искаме да добавяме в края
-	if (!it || it.ptr == back) {
-		// Добавя се елемент в края
-		back->next = newElem;
-		back = newElem;
+	// Добавя се елемент в края
+	if (it.ptr == back) {
+		back = back->next;
 	}
-	else {
-		// Добавя се елемент някъде по средата
-		newElem->next = it.ptr->next;
-		it.ptr->next = newElem;
-	}
+
 	return true;
 }
 
-// O(n) по време и O(1) по памет
+// O(n) по време	
 template <typename T>
 bool LinkedList<T>::insertBefore(I const& it, T const& x) {
 	if (it == begin()) {
 		// Вмъкваме в началото: специален случай
 		LLE* newElem = new LLE{ x, front };
 		front = newElem;
+
 		// Проверка дали списъкът е празен
 		if (back == nullptr)
 			// вмъкваме в празен списък
 			back = newElem;
 		return true;
 	}
+
 	return insertAfter(findPrev(it), x);
 }
 
 // O(1) по време и по памет
 template <typename T>
 bool LinkedList<T>::deleteAfter(I const& it, T& x) {
-	if (!it)
+	if (empty()) {
+		return false;
+	}
+
+	if (!it) {
 		// Не може да се изтрива след невалиден итератор(позиция)
 		return false;
+	}
 
-	LLE* deletedElem = it.ptr->next;
+	LLE* deleteElem = it.ptr->next;
 
-	if (!deletedElem)
+	if (!deleteElem) {
 		// Не може да се изтрива след края
 		return false;
+	}
 
-	it.ptr->next = deletedElem->next;
-	x = deletedElem->data;
+	it.ptr->next = deleteElem->next;
+	x = deleteElem->data;
 
-	if (back == deletedElem)
+	if (back == deleteElem)
 		// Изтрива се последният елемент
 		back = it.ptr;
 
-	delete deletedElem;
+	delete deleteElem;
 	return true;
 }
 
 // O(n) по време и O(1) по памет
 template <typename T>
 bool LinkedList<T>::deleteAt(I const& it, T& x) {
-	if (!empty() && it == begin()) {
-		x = front->data;
-		LLE* deletedElem = front;
+	if (empty()) {
+		return false;
+	}
+
+	if (it == begin()) {
+		x = *it;
+		LLE* deleteElem = front;
 		front = front->next;
-		if (back == deletedElem) {
+		if (back == deleteElem) {
 			// Изтрива се последният елемент от списъка
 			back = nullptr;
 		}
-		delete deletedElem;
+		delete deleteElem;
 		return true;
 	}
 
@@ -372,9 +389,14 @@ bool LinkedList<T>::deleteAt(I const& it, T& x) {
 // O(n) по време и O(1) по памет
 template <typename T>
 bool LinkedList<T>::deleteBefore(I const& it, T& x) {
+	if (empty()) {
+		return false;
+	}
+
 	if (it == begin()) {
 		return false;
 	}
+	
 	return deleteAt(findPrev(it), x);
 }
 
