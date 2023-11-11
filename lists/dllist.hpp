@@ -357,7 +357,8 @@ bool DoubleLinkedList<T>::deleteAt(I & it, T& x) {
     x = it.ptr->data;
     delete it.ptr;
 
-    //it.ptr = nullptr;
+    // Зануляване на указателя в итератора за следващо използване
+    it.ptr = nullptr;
     return true;
 }
 
