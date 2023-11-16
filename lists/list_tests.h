@@ -1,397 +1,240 @@
-#ifndef _LINKED_LIST_HPP
-#define _LINKED_LIST_HPP
-
-/*	Представяне на елемент на свързан списък с една връзка
-	 ___________
-	|ст/ст| адр |
-	|_____|_____|
-	 data   next
-*/
-template <typename T>
-struct LinkedListElement {
-	T data;
-	LinkedListElement<T>* next;
-};
-
-// Декларация на клас LinkedList
-template <typename T>
-class LinkedList;
-
-// Дефиниране на клас Итератор
-template <typename T>
-class LinkedListIterator {
-	// Съкратени записи за шаблон на елемент от свързан списък и итератор
-	using LLE = LinkedListElement<T>;
-	using I = LinkedListIterator<T>;
-
-	// Осигурява достъп до вътрешното представяне на списъка
-	friend LinkedList<T>;
-
-	// Реализира абстракция на позиция чрез ptr към елемент
-	LLE* ptr;
-public:
-	// Подразбиращ се конструктор и конструктор с един параметър
-	LinkedListIterator(LLE* pos = nullptr) : ptr(pos) {}
-
-	// Метод за взимане на итератор към следващ елемент
-	I next() const {
-		// Проверка за валидност на текущия итератор
-		if (!valid()) {
-			// Запазва и връща текущия итератор
-			return *this;
-		}
-		// Създава нов обект итератор, който се свързва със следващия елемент на списъка
-		return I(ptr->next);
-	}
-
-	// Проверка за валидност (обхваща и случая с достигането на края на свързания списък)
-	bool valid() const {
-		return ptr != nullptr;
-	}
-
-	// Методи за извличане на стойността на елемента свързан с итератора
-	T const& getConst() const {
-		return ptr->data;
-	}
-
-	T& get() const {
-		return ptr->data;
-	}
-
-	// Синтактична захар
-	// it <=> it.valid();
-	operator bool() const {
-		return valid();
-	}
-
-	// ++it
-	I& operator++() {
-		return (*this = next());
-	}
-
-	// it++
-	I operator++(int) {
-		I saved = *this;
-		++(*this);
-		return saved;
-	}
-
-	// *it = 3;
-	T& operator*() {
-		return get();
-	}
-
-	// T data = *it;
-	T const & operator*() const {
-		return getConst();
-	}
-	// Сравнение на итератори
-	// it1 == it2
-	bool operator==(I const& it) const {
-		return ptr == it.ptr;
-	}
-
-	// it1 != it2
-	bool operator!=(I const& it) const {
-		return !(*this == it);
-	}
-
-	// Преместване с n позиции
-	// it += n
-	I& operator+=(unsigned n) {
-		for (int i = 0; i < n; ++i) {
-			++(*this);
-		}
-
-		return *this;
-	}
-};
-
-// Дефиниране на клас Свързан списък
-template <typename T>
-class LinkedList {
-public:
-	// Ще използваме I като тип за LinkedListIterator<T>
-	using I = LinkedListIterator<T>;
-	using Type = T;
-
-private:
-	using LLE = LinkedListElement<T>;
-
-	// Представяне на свързан списък с два указателя
-	LLE* front, * back;
-
-	// Помощна член-функция за изтриване на динамично заделената памет
-	void erase();
-
-	// Допълнителен метод за намиране на предходен елемент
-	I findPrev(I const& it);
-
-public:
-	// Подразбиращ се конструктор, който създава празен списък
-	LinkedList() : front(nullptr), back(nullptr) {}
-
-	// Конструктор за копиране и оператор за присвояване за свързан списък
-	LinkedList(LinkedList<T> const& ll);
-	LinkedList<T>& operator=(LinkedList<T> const& ll);
-
-	// Деструктор
-	~LinkedList() {
-		erase();
-	}
-
-	// Move конструктор и оператор за присвояване
-	LinkedList(LinkedList<T>&& ll) {
-		front = ll.front;
-		back = ll.back;
-		ll.front = ll.back = nullptr;
-	}
-
-	LinkedList<T>& operator=(LinkedList<T>&& ll) {
-		if (this != &ll) {
-			erase();
-			front = ll.front;
-			back = ll.back;
-			ll.front = ll.back = nullptr;
-		}
-
-		return *this;
-	}
+#define TEST_BOTH LinkedList<int>, DoubleLinkedList<int>
 
 
-	// Методи за взимане на позиции в свързания списък
-	// Метод за начало на свързан списък
-	I begin() const {
-		return I(front);
-	}
-
-	// Метод връщащ края на свързан списък
-	I end() const {
-		// Създава итератор от nullptr, 
-		// което позволява използване на цикли до края на списъка - до невалидна позиция
-		// Реализацията е сходна с stl-ската
-		return I();
-	}
-
-	I last() const {
-		return I(back);
-	}
-
-	// Метод, който проверява дали списъкът е празен
-	bool empty() const {
-		return front == nullptr && back == nullptr;
-	}
-
-	// Методи за извличане на стойност на елемент
-	T const& getAt(I const& it) const;
-	T& getAt(I const& it);
-
-	// Основни методи за добавяне на елемент
-	bool insertBefore(I const& it, T const& x);
-	bool insertAfter(I const& it, T const& x);
-
-	// Основни методи за изтриване на елемент
-	bool deleteBefore(I const& it, T& x);
-	bool deleteAfter(I const& it, T& x);
-	bool deleteAt(I const& it, T& x);
-
-	// Допълнителни методи за добавяне и изтриване на елементи
-	// O(1) по време и памет
-	bool insertFirst(T const& x) {
-		return insertBefore(begin(), x);
-	}
-	bool insertLast(T const& x) {
-		return insertAfter(last(), x);
-	}
-
-	// Фунции за изтриване на елемент без допълнителен параметър
-	bool deleteBefore(I const& it) {
-		T tmp;
-		return deleteBefore(it, tmp);
-	}
-	bool deleteAfter(I const& it) {
-		T tmp;
-		return deleteAfter(it, tmp);
-	}
-	bool deleteAt(I const& it) {
-		T tmp;
-		return deleteAt(it, tmp);
-	}
-
-	// O(1) по време и по памет
-	bool deleteFirst(T& x) {
-		return deleteAt(begin(), x);
-	}
-
-	bool deleteFirst() {
-		T tmp;
-		return deleteFirst(tmp);
-	}
-
-	// O(n) по време, O(1) по памет
-	bool deleteLast(T& x) {
-		return deleteAt(end(), x);
-	}
-
-	// Методи за конкатенация на елементи от списъка подаден като параметър
-	void append(LinkedList<T> const& ll);
-	void appendAssign(LinkedList<T>& ll);
-
-	// Синтактична захар
-	// Добавяне на елемент чрез оператора +=
-	LinkedList<T>& operator+=(T const& x) {
-		insertLast(x);
-		return *this;
-	}
-};
-
-template <typename T>
-void LinkedList<T>::append(LinkedList const& l) {
-	for (T const& x : l)
-		insertLast(x);
+TEST_CASE_TEMPLATE("Insert consecutively elements at the end of the list", TestList, TEST_BOTH) {
+    TestList l;
+    for (int i = 1; i <= 10; i++)
+        l += i;
+    int i = 1;
+    for (int x : l)
+        CHECK_EQ(x, i++);
+    CHECK_EQ(i, 11);
 }
 
-// Методът използва паметта за елементите на списъка l и го променя
-template <typename T>
-void LinkedList<T>::appendAssign(LinkedList& l) {
-	// Проверява дали списъкът е празен
-	if (back != nullptr)
-		back->next = l.front;
-	else
-		front = l.front;
+TEST_CASE_TEMPLATE("Insert after every element in the list", TestList, TEST_BOTH) {
+    TestList l;
+    // Вмъкват се нечетните числа от 1 до 10
+    for (int i = 1; i <= 9; i += 2)
+        l += i;
+    // Вмъкват се стойности след всяко число
+    for (typename TestList::I it = l.begin(); it; it += 2)
+        l.insertAfter(it, *it + 1);
 
-	// Проверка дали подадения като параметър списък е празен
-	if (l.back != nullptr)
-		back = l.back;
-
-	// Занулява указателите, за да избегне поделянето на памет
-	l.front = l.back = nullptr;
+    // Очакван резултат - последователните числа от 1 до 10
+    int i = 1;
+    for (int x : l)
+        CHECK_EQ(x, i++);
+    CHECK_EQ(i, 11);
 }
 
-// Метод за изтриване на динамично заделената памет
-template <typename T>
-void LinkedList<T>::erase() {
-	while (!empty())
-		deleteFirst();
+TEST_CASE_TEMPLATE("Delete every even element in a list", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се всички числа от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l += i;
+    // Изтриват се всички четни числа
+    for (typename TestList::I it = l.begin(); it; ++it) {
+        int x;
+        CHECK(l.deleteAfter(it, x));
+        CHECK_EQ(x, *it + 1);
+    }
+    // Проверява се дали са останали само нечетните числа
+    int i = 1;
+    for (int x : l) {
+        CHECK_EQ(x, i);
+        i += 2;
+    }
+    CHECK_EQ(i, 11);
 }
 
-// O(n) по време и O(1) по памет
-template <typename T>
-LinkedListIterator<T> LinkedList<T>::findPrev(LinkedListIterator<T> const& it) {
-	I result = begin();
-	while (result && result.next() != it)
-		++result;
-
-	// !result || result.next() == it
-	return result;
+TEST_CASE_TEMPLATE("Delete last element works correctly", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се всички числа от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l += i;
+    typename TestList::I it = l.begin();
+    it += 8;
+    // Итераторът е върху предпоследния елемент
+    int x;
+    CHECK(l.deleteAfter(it, x));
+    CHECK_EQ(x, 10);
+    l += 11;
+    // Последният елемент наистина ли е 11?
+    it = l.begin();
+    REQUIRE(it);
+    CHECK_EQ(*(it += 9), 11);
 }
 
-// Конструктор за копиране
-template <typename T>
-LinkedList<T>::LinkedList(LinkedList const& l) : front(nullptr), back(nullptr) {
-	// Използва се функцията append
-	// Функцията вмъква елементи със същите стойности от списъка l в списъка *this
-	append(l);
+TEST_CASE_TEMPLATE("Insert consecutively elements at the beginning of the list", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l.insertFirst(i);
+    // Проверка дали back е коректен
+    l.insertLast(0);
+    int i = 10;
+    for (int x : l)
+        CHECK_EQ(x, i--);
+    CHECK_EQ(i, -1);
 }
 
-// Оператор за присвояване
-template <typename T>
-LinkedList<T>& LinkedList<T>::operator=(LinkedList const& l) {
-	if (this != &l) {
-		erase();
-		append(l);
-	}
-	return *this;
+TEST_CASE_TEMPLATE("Insert elements before every second element in the list", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се четните числа от 2 до 10
+    for (int i = 2; i <= 10; i += 2)
+        l += i;
+    // Вмъква се елемент преди всеки съществуващ елемент
+    for (typename TestList::I it = l.begin(); it; ++it)
+        l.insertBefore(it, *it - 1);
+    // Очакван резултат: последователните числа от 1 до 10
+    int i = 1;
+    for (int x : l)
+        CHECK_EQ(x, i++);
+    CHECK_EQ(i, 11);
+}
+
+TEST_CASE_TEMPLATE("Delete every second element in the list", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l += i;
+    int i = 1;
+    for (typename TestList::I it = l.begin(); it; ++it, i += 2) {
+        int x;
+        typename TestList::I del = it++;
+        CHECK(l.deleteAt(del, x));
+        CHECK_EQ(x, i);
+    }
+    i = 2;
+    for (int x : l) {
+        CHECK_EQ(x, i);
+        i += 2;
+    }
+    CHECK_EQ(i, 12);
 }
 
 
-// O(1) по време и памет
-template <typename T>
-bool LinkedList<T>::insertAfter(I const& it, T const& x) {
-	if (empty()) {
-		front = back = new LLE{ x, nullptr };
-		return true;
-	}
-	
-	it.ptr->next = new LLE{ x, it.ptr->next };
-	
-	// Добавя се елемент в края
-	if (it.ptr == back) {
-		back = back->next;
-	}
-
-	return true;
+TEST_CASE_TEMPLATE("Delete before every second element of the list", TestList, TEST_BOTH) {
+    TestList l;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l += i;
+    int i = 1;
+    // Изтриваме елементите преди всички четни числа
+    for (typename TestList::I it = l.begin(); it; ++it, i += 2) {
+        ++it;
+        int x;
+        CHECK(l.deleteBefore(it, x));
+        CHECK_EQ(i, x);
+    }
+    // остават само четните
+    i = 2;
+    for (int x : l) {
+        CHECK_EQ(i, x);
+        i += 2;
+    }
+    CHECK_EQ(i, 12);
 }
 
-// O(n) по време и O(1) по памет
-template <typename T>
-bool LinkedList<T>::insertBefore(I const& it, T const& x) {
-	if (it == begin()) {
-		// Вмъкваме в началото: специален случай
-		LLE* newElem = new LLE{ x, front };
-		front = newElem;
-		// Проверка дали списъкът е празен
-		if (back == nullptr)
-			// вмъкваме в празен списък
-			back = newElem;
-		return true;
-	}
-	return insertAfter(findPrev(it), x);
+TEST_CASE_TEMPLATE("Copy initialization of lists avoids sharing", TestList, TEST_BOTH) {
+    TestList l1;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l1 += i;
+
+    TestList l2 = l1;
+    l1 += 11;
+    l1.insertFirst(0);
+
+    for (int& x : l2)
+        x *= 2;
+    l2 += 22;
+    l2.insertFirst(0);
+
+    // в l1 са числата от 0 до 11
+    int i = 0;
+    for (int x : l1)
+        CHECK_EQ(i++, x);
+    CHECK_EQ(i, 12);
+
+    // в l2 са четните числа от 0 до 22
+    i = 0;
+    for (int x : l2) {
+        CHECK_EQ(i, x);
+        i += 2;
+    }
+    CHECK_EQ(i, 24);
 }
 
-// O(1) по време и по памет
-template <typename T>
-bool LinkedList<T>::deleteAfter(I const& it, T& x) {
-	if (!it)
-		// Не може да се изтрива след невалиден итератор(позиция)
-		return false;
+TEST_CASE_TEMPLATE("Assignment of lists avoids sharing", TestList, TEST_BOTH) {
+    TestList l1, l2;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l1 += i;
 
-	LLE* deletedElem = it.ptr->next;
+    // Добавят се числата от 11 до 20
+    for (int i = 11; i <= 20; i++)
+        l2 += i;
 
-	if (!deletedElem)
-		// Не може да се изтрива след края
-		return false;
+    l2 = l1;
+    l1 += 11;
+    l1.insertFirst(0);
 
-	it.ptr->next = deletedElem->next;
-	x = deletedElem->data;
+    for (int& x : l2)
+        x *= 2;
+    l2 += 22;
+    l2.insertFirst(0);
 
-	if (back == deletedElem)
-		// Изтрива се последният елемент
-		back = it.ptr;
+    // в l1 са числата от 0 до 11
+    int i = 0;
+    for (int x : l1)
+        CHECK_EQ(i++, x);
+    CHECK_EQ(i, 12);
 
-	delete deletedElem;
-	return true;
+    // в l2 са четните числа от 0 до 22
+    i = 0;
+    for (int x : l2) {
+        CHECK_EQ(i, x);
+        i += 2;
+    }
+    CHECK_EQ(i, 24);
 }
 
-// O(n) по време и O(1) по памет
-template <typename T>
-bool LinkedList<T>::deleteAt(I const& it, T& x) {
-	if (empty()) {
-		return false;
-	}
-	
-	if (it == begin()) {
-		x = *it;
-		LLE* deletedElem = front;
-		front = front->next;
-		if (back == deletedElem) {
-			// Изтрива се последният елемент от списъка
-			back = nullptr;
-		}
-		delete deletedElem;
-		return true;
-	}
+TEST_CASE_TEMPLATE("Appending two lists", TestList, TEST_BOTH) {
+    TestList l1, l2;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l1 += i;
 
-	return deleteAfter(findPrev(it), x);
+    // Добавят се числата от 11 до 20
+    for (int i = 11; i <= 20; i++)
+        l2 += i;
+
+    l1.append(l2);
+
+    // Очакван резултат: числата от 1 до 20
+    int i = 1;
+    for (int x : l1)
+        CHECK_EQ(i++, x);
+    CHECK_EQ(i, 21);
 }
 
-// O(n) по време и O(1) по памет
-template <typename T>
-bool LinkedList<T>::deleteBefore(I const& it, T& x) {
-	if (it == begin()) {
-		return false;
-	}
-	return deleteAt(findPrev(it), x);
-}
+TEST_CASE_TEMPLATE("Append a second list by stealing its elements", TestList, TEST_BOTH) {
+    TestList l1, l2;
+    // Добавят се числата от 1 до 10
+    for (int i = 1; i <= 10; i++)
+        l1 += i;
 
-#endif
+    // Добавят се числата от 11 до 20
+    for (int i = 11; i <= 20; i++)
+        l2 += i;
+
+    l1.appendAssign(l2);
+    CHECK(l2.empty());
+
+    // Очакван резултат: числата от 1 до 20
+    int i = 1;
+    for (int x : l1)
+        CHECK_EQ(i++, x);
+    CHECK_EQ(i, 21);
+}
