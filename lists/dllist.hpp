@@ -265,7 +265,7 @@ public:
     }
 
     bool isPalindrome() const {
-        if (empty) {
+        if (empty()) {
             return false;
         }
 
