@@ -23,11 +23,6 @@ public:
         return pos;
     }
 
-    BinTreePosition<T> search(T const& x) const {
-        // Търсенето започва от корена
-        return searchFromPos(BinTree<T>::rootPos(), x);
-    }
-
     BinTreeMutablePosition<T> search(T const& x) {
         // Търсенето започва от корена
         return searchFromPos(BinTree<T>::rootMutablePos(), x);
