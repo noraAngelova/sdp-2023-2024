@@ -34,8 +34,8 @@ TEST_CASE_TEMPLATE("Delete every even element in a list", TestList, TEST_BOTH) {
         l += i;
     // Изтриват се всички четни числа
     for (typename TestList::I it = l.begin(); it; ++it) {
-        int x;
-        CHECK(l.deleteAfter(it, x));
+        int x = *it + 1;
+        CHECK(l.deleteAfter(it));
         CHECK_EQ(x, *it + 1);
     }
     // Проверява се дали са останали само нечетните числа
@@ -56,8 +56,8 @@ TEST_CASE_TEMPLATE("Delete last element works correctly", TestList, TEST_BOTH) {
     it += 8;
     // Итераторът е върху предпоследния елемент
     int x;
-    CHECK(l.deleteAfter(it, x));
-    CHECK_EQ(x, 10);
+    CHECK_EQ(*it, 9);
+    CHECK(l.deleteAfter(it));
     l += 11;
     // Последният елемент наистина ли е 11?
     it = l.begin();
@@ -100,9 +100,9 @@ TEST_CASE_TEMPLATE("Delete every second element in the list", TestList, TEST_BOT
         l += i;
     int i = 1;
     for (typename TestList::I it = l.begin(); it; ++it, i += 2) {
-        int x;
+        int x = *it;
         typename TestList::I del = it++;
-        CHECK(l.deleteAt(del, x));
+        CHECK(l.deleteAt(del));
         CHECK_EQ(x, i);
     }
     i = 2;
@@ -122,9 +122,9 @@ TEST_CASE_TEMPLATE("Delete before every second element of the list", TestList, T
     int i = 1;
     // Изтриваме елементите преди всички четни числа
     for (typename TestList::I it = l.begin(); it; ++it, i += 2) {
+        int x = *it;
         ++it;
-        int x;
-        CHECK(l.deleteBefore(it, x));
+        CHECK(l.deleteBefore(it));
         CHECK_EQ(i, x);
     }
     // остават само четните
