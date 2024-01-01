@@ -82,7 +82,7 @@ public:
 	}
 
 	// T data = *it;
-	T const & operator*() const {
+	T const& operator*() const {
 		return getConst();
 	}
 	// Сравнение на итератори
@@ -191,9 +191,9 @@ public:
 	bool insertAfter(I const& it, T const& x);
 
 	// Основни методи за изтриване на елемент
-	bool deleteBefore(I const& it, T& x);
-	bool deleteAfter(I const& it, T& x);
-	bool deleteAt(I & it, T& x);
+	bool deleteBefore(I const& it);
+	bool deleteAfter(I const& it);
+	bool deleteAt(I& it);
 
 	// Допълнителни методи за добавяне и изтриване на елементи
 	// O(1) по време и памет
@@ -204,34 +204,15 @@ public:
 		return insertAfter(last(), x);
 	}
 
-	// Фунции за изтриване на елемент без допълнителен параметър
-	bool deleteBefore(I const& it) {
-		T tmp;
-		return deleteBefore(it, tmp);
-	}
-	bool deleteAfter(I const& it) {
-		T tmp;
-		return deleteAfter(it, tmp);
-	}
-	bool deleteAt(I const& it) {
-		T tmp;
-		return deleteAt(it, tmp);
-	}
-
 	// O(1) по време и по памет
-	bool deleteFirst(T& x) {
-		I beg = begin();
-		return deleteAt(beg, x);
-	}
-
 	bool deleteFirst() {
-		T tmp;
-		return deleteFirst(tmp);
+		I beg = begin();
+		return deleteAt(beg);
 	}
 
-	// O(n) по време, O(1) по памет
-	bool deleteLast(T& x) {
-		return deleteAt(end(), x);
+	bool deleteLast() {
+		I it = end();
+		return deleteAt(it);
 	}
 
 	// Методи за конкатенация на елементи от списъка подаден като параметър
@@ -243,6 +224,11 @@ public:
 	LinkedList<T>& operator+=(T const& x) {
 		insertLast(x);
 		return *this;
+	}
+
+	void print() const {
+		for (T x : *this)
+			std::cout << x << " ";
 	}
 };
 
@@ -313,9 +299,9 @@ bool LinkedList<T>::insertAfter(I const& it, T const& x) {
 		front = back = new LLE{ x, nullptr };
 		return true;
 	}
-	
+
 	it.ptr->next = new LLE{ x, it.ptr->next };
-	
+
 	// Добавя се елемент в края
 	if (it.ptr == back) {
 		back = back->next;
@@ -342,7 +328,7 @@ bool LinkedList<T>::insertBefore(I const& it, T const& x) {
 
 // O(1) по време и по памет
 template <typename T>
-bool LinkedList<T>::deleteAfter(I const& it, T& x) {
+bool LinkedList<T>::deleteAfter(I const& it) {
 	if (!it) {
 		// Не може да се изтрива след невалиден итератор(позиция)
 		return false;
@@ -356,7 +342,6 @@ bool LinkedList<T>::deleteAfter(I const& it, T& x) {
 	}
 
 	it.ptr->next = deletedElem->next;
-	x = deletedElem->data;
 
 	if (back == deletedElem) {
 		// Изтрива се последният елемент
@@ -369,13 +354,12 @@ bool LinkedList<T>::deleteAfter(I const& it, T& x) {
 
 // O(n) по време и O(1) по памет
 template <typename T>
-bool LinkedList<T>::deleteAt(I & it, T& x) {
+bool LinkedList<T>::deleteAt(I& it) {
 	if (empty()) {
 		return false;
 	}
-	
+
 	if (it == begin()) {
-		x = *it;
 		LLE* deletedElem = front;
 		front = front->next;
 		if (back == deletedElem) {
@@ -391,12 +375,12 @@ bool LinkedList<T>::deleteAt(I & it, T& x) {
 	I prev = findPrev(it);
 	it.ptr = nullptr;
 
-	return deleteAfter(prev, x);
+	return deleteAfter(prev);
 }
 
 // O(n) по време и O(1) по памет
 template <typename T>
-bool LinkedList<T>::deleteBefore(I const& it, T& x) {
+bool LinkedList<T>::deleteBefore(I const& it) {
 	if (it == begin()) {
 		return false;
 	}
@@ -404,7 +388,7 @@ bool LinkedList<T>::deleteBefore(I const& it, T& x) {
 	// Използване на допълнителен итератой, който може да бъде занулен
 	I prev = findPrev(it);
 
-	return deleteAt(prev, x);
+	return deleteAt(prev);
 }
 
 #endif
